@@ -2,6 +2,7 @@
 const http = require('http');
 const url = require('url');
 const StringDecoder = require('string_decoder').StringDecoder;
+const config = require('./config');
 
 const server = http.createServer((req, res) => {
     const parsedUrl = url.parse(req.url, true);
@@ -29,7 +30,7 @@ const server = http.createServer((req, res) => {
             body: buffer
         }
 
-        chosenHandler(request, (statusCode, payload) => {
+        chosenHandler({ someData: 'sample data' }, (statusCode, payload) => {
             if (typeof(statusCode) != 'number')
                 statusCode = 200;
             if (typeof(payload) != 'object')
@@ -37,6 +38,7 @@ const server = http.createServer((req, res) => {
             
             const responseBody = JSON.stringify(payload);
             
+            res.setHeader('Content-Type', 'application/json');
             res.writeHead(statusCode);
             res.end(responseBody);
 
@@ -45,9 +47,8 @@ const server = http.createServer((req, res) => {
     });
 });
 
-const port = 3000;
-server.listen(port, () => {
-    console.log(`The server is listening on port ${port}`)
+server.listen(config.port, () => {
+    console.log(`The server is listening on port ${config.port} in ${config.envName} mode`)
 });
 
 const handlers = {
