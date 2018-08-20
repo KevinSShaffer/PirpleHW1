@@ -1,13 +1,30 @@
 
 const http = require('http');
+const https = require('https');
 const url = require('url');
 const StringDecoder = require('string_decoder').StringDecoder;
 const config = require('./config');
+const fs = require('fs');
 
-const server = http.createServer((req, res) => {
+const httpsServerOptions = {
+    'key': fs.readFileSync('./https/key.pem'),
+    'cert': fs.readFileSync('./https/cert.pem')
+};
+
+http.createServer(unifiedServer)
+    .listen(config.httpPort, () => {
+        console.log(`The http server is listening on port ${config.httpPort} in ${config.envName} mode`)
+    });
+
+https.createServer(httpsServerOptions, unifiedServer)
+    .listen(config.httpsPort, () => {
+        console.log(`The https server is listening on port ${config.httpsPort} in ${config.envName} mode`)
+    });
+
+function unifiedServer(req, res) {
     const parsedUrl = url.parse(req.url, true);
     const path = parsedUrl.pathname;
-    const trimmedPath = path.replace(/^\/+|\/+$/g, '');
+    const trimmedPath = path.replace(/^\/+|\/+$/g, '').toLowerCase();
     const decoder = new StringDecoder('utf-8');
     let buffer = '';
 
@@ -22,15 +39,7 @@ const server = http.createServer((req, res) => {
         if (chosenHandler == undefined)
             chosenHandler = handlers.notFound;
 
-        const request = {
-            path: trimmedPath,
-            query: parsedUrl.query,
-            method: req.method.toUpperCase(),
-            headers: req.headers,
-            body: buffer
-        }
-
-        chosenHandler({ someData: 'sample data' }, (statusCode, payload) => {
+        chosenHandler({}, (statusCode, payload) => {
             if (typeof(statusCode) != 'number')
                 statusCode = 200;
             if (typeof(payload) != 'object')
@@ -45,20 +54,24 @@ const server = http.createServer((req, res) => {
             console.log(`Returning this response: (${statusCode}) ${responseBody}`);
         });
     });
-});
-
-server.listen(config.port, () => {
-    console.log(`The server is listening on port ${config.port} in ${config.envName} mode`)
-});
+}
 
 const handlers = {
+    ping(data, callback) {
+        callback(200)
+    },
     sample(data, callback) {
-        callback(200, data)
+        callback(200, { someData: 'sample data' })
+    },
+    helloWorld(data, callback) {
+        callback(200, { message: 'hello world' })
     },
     notFound(data, callback) {
         callback(404)
     }
 }
 const router = {
-    sample: handlers.sample
+    ping: handlers.ping,
+    sample: handlers.sample,
+    helloworld: handlers.helloWorld
 }
