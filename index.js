@@ -73,5 +73,5 @@ const handlers = {
 const router = {
     ping: handlers.ping,
     sample: handlers.sample,
-    helloworld: handlers.helloWorld
+    hello: handlers.helloWorld
 }
