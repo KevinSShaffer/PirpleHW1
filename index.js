@@ -5,6 +5,12 @@ const url = require('url');
 const StringDecoder = require('string_decoder').StringDecoder;
 const config = require('./config');
 const fs = require('fs');
+const _data = require('./lib/data');
+
+_data.delete('test', 'newFile', err => {
+    if (err) 
+        console.log(err);
+});
 
 const httpsServerOptions = {
     'key': fs.readFileSync('./https/key.pem'),
