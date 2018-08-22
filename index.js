@@ -5,12 +5,7 @@ const url = require('url');
 const StringDecoder = require('string_decoder').StringDecoder;
 const config = require('./config');
 const fs = require('fs');
-const _data = require('./lib/data');
-
-_data.delete('test', 'newFile', err => {
-    if (err) 
-        console.log(err);
-});
+const handlers = require('./lib/handlers');
 
 const httpsServerOptions = {
     'key': fs.readFileSync('./https/key.pem'),
@@ -29,8 +24,7 @@ https.createServer(httpsServerOptions, unifiedServer)
 
 function unifiedServer(req, res) {
     const parsedUrl = url.parse(req.url, true);
-    const path = parsedUrl.pathname;
-    const trimmedPath = path.replace(/^\/+|\/+$/g, '').toLowerCase();
+    const trimmedPath = parsedUrl.pathname.replace(/^\/+|\/+$/g, '').toLowerCase();
     const decoder = new StringDecoder('utf-8');
     let buffer = '';
 
@@ -45,7 +39,15 @@ function unifiedServer(req, res) {
         if (chosenHandler == undefined)
             chosenHandler = handlers.notFound;
 
-        chosenHandler({}, (statusCode, payload) => {
+        const request = {
+            path: trimmedPath,
+            query: parsedUrl.query,
+            method: req.method.toUpperCase(),
+            headers: req.headers,
+            body: buffer
+        }
+
+        chosenHandler({}, (statusCode, request) => {
             if (typeof(statusCode) != 'number')
                 statusCode = 200;
             if (typeof(payload) != 'object')
@@ -62,20 +64,6 @@ function unifiedServer(req, res) {
     });
 }
 
-const handlers = {
-    ping(data, callback) {
-        callback(200)
-    },
-    sample(data, callback) {
-        callback(200, { someData: 'sample data' })
-    },
-    helloWorld(data, callback) {
-        callback(200, { message: 'hello world' })
-    },
-    notFound(data, callback) {
-        callback(404)
-    }
-}
 const router = {
     ping: handlers.ping,
     sample: handlers.sample,
